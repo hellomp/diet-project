@@ -59,6 +59,7 @@
     "element-ui": "^2.4.11",
     "lodash": "^4.17.11",
     "sqlite-sync": "^0.3.8",
+    "tmp": "0.0.33",
     "uniqid": "^5.0.3",
     "vue": "^2.5.16",
     "vue-data-tables": "^3.4.4",

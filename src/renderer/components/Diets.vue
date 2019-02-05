@@ -26,22 +26,22 @@
         <div id="dialog-header" class="font-semibold text-xl px-4 py-4">Nova Dieta</div>
         <div id="dialog-form" class="px-4 flex flex-col">
           <div class="flex mb-2">
-            <input type="text" placeholder="Nome" class="flex-grow px-4 py-2 border-2 border-grey text-lg rounded-full">
+            <input type="text" v-model="newDiet.name" placeholder="Nome" class="flex-grow px-4 py-2 border-2 border-grey text-lg rounded-full">
           </div>
           <div class="flex mb-2">
             <input type="text" placeholder="Refeição" class="flex-grow px-4 py-2 border-2 border-grey text-lg rounded-full">
           </div>
           <div class="flex mb-2">
-            <input type="text" placeholder="Energia" class="flex-grow w-full mr-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
-            <input type="text" placeholder="Carboidrato" class="flex-grow w-full ml-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
+            <input type="text" v-model="newDiet.energyTarget" placeholder="Energia" class="flex-grow w-full mr-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
+            <input type="text" v-model="newDiet.carbohydrateTarget" placeholder="Carboidrato" class="flex-grow w-full ml-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
           </div>
           <div class="flex mb-3">
-            <input type="text" placeholder="Proteína" class="flex-grow w-full mr-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
-            <input type="text" placeholder="Lipídeo" class="flex-grow w-full ml-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
+            <input type="text" v-model="newDiet.proteinTarget" placeholder="Proteína" class="flex-grow w-full mr-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
+            <input type="text" v-model="newDiet.lipidTarget" placeholder="Lipídeo" class="flex-grow w-full ml-1 px-4 py-2 border-2 border-grey text-lg rounded-full">
           </div>
           <div class="flex justify-end mb-4">
             <button @click="cancelModal" class="border-primary border-2 mr-2 py-2 px-4 text-lg text-primary rounded-full">Cancelar</button>
-            <button class="bg-primary py-2 px-4 text-lg text-white rounded-full">Criar</button>
+            <button @click="createDiet" class="bg-primary py-2 px-4 text-lg text-white rounded-full">Criar</button>
           </div>
         </div>
     </el-dialog>
@@ -52,6 +52,11 @@
   import {
     mapGetters
   } from 'vuex'
+  import {
+    remote
+  } from 'electron'
+  import tmp from 'tmp'
+  import fs from 'fs'
 
   export default {
     name: 'diets',
@@ -61,6 +66,10 @@
         newDiet: {
           name: '',
           path: '',
+          energyTarget: '',
+          carbohydrateTarget: '',
+          proteinTarget: '',
+          lipidTarget: '',
           meals: []
         }
       }
@@ -77,11 +86,42 @@
           }
         })
       },
+      createDiet () {
+        let newDietData = JSON.stringify(this.newDiet)
+        let instance = this
+        tmp.file({
+          dir: remote.app.getPath('temp')
+        }, function _tempFileCreated (err, path, fd, cleanupCallback) {
+          if (err) throw err
+          console.log('File: ', path)
+          console.log('Filedescriptor: ', fd)
+          fs.writeFile(path, newDietData, 'utf-8', (err) => {
+            if (err) throw err
+            instance.cancelModal()
+            instance.$router.push({
+              name: 'diet',
+              params: {
+                dietPath: path
+              }
+            })
+          })
+        })
+      },
       openModal () {
         this.modalOpened = true
       },
       cancelModal () {
+        this.resetNewDiet()
         this.modalOpened = false
+      },
+      resetNewDiet () {
+        this.newDiet.name = ''
+        this.newDiet.path = ''
+        this.newDiet.energyTarget = ''
+        this.newDiet.carbohydrateTarget = ''
+        this.newDiet.proteinTarget = ''
+        this.newDiet.lipidTarget = ''
+        this.newDiet.meals = []
       }
     }
   }
