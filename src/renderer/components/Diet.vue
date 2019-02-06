@@ -17,22 +17,15 @@
           <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
           <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
         </div>
-        <el-table :data="meal.items" :default-sort="{prop: 'description', order: 'descending'}" show-summary :summary-method="getSummaries" style="width: 100%">
+        <el-table :data="meal.items" show-summary style="width: 100%">
           <el-table-column type="selection" width="55">
           </el-table-column>
-          <el-table-column prop="description" label="Alimento" sortable="true">
-          </el-table-column>
-          <el-table-column prop="energy_kcal" label="Energia" sortable>
-          </el-table-column>
-          <el-table-column prop="carbohydrate_qty" label="Carboidrato" sortable>
-          </el-table-column>
-          <el-table-column prop="protein_qty" label="Proteína" sortable>
-          </el-table-column>
-          <el-table-column prop="lipid_qty" label="Lipídeo" sortable>
+          <el-table-column v-for="(column, index) of columns" :key="index" :prop="column.name" :label="column.label" :sortable="column.sortable">
           </el-table-column>
         </el-table>
       </div>
-      
+      <div>
+      </div>
       <button class="mx-auto bg-primary py-2 px-4 text-white rounded-full shadow" @click="createMeal"> 
         <font-awesome-icon icon="plus" class="mr-2"/>
         <span >Nova refeição</span>
@@ -74,22 +67,10 @@
         </data-tables>
       </div>
     </el-dialog>
-    <!-- <modal name="hello-world" height="auto" width="80%">
-      <div id="diets-table" class="bg-white rounded-lg shadow">
-        <div id="table-title" class="pl-4 pt-4 pb-2 font-semibold text-xl">Dietas</div>
-        <el-table :data="getCompositions" height="80vh" @row-click="openDiet" style="width: 100%">
-          <el-table-column prop="description" label="Alimento" width="350px">
-          </el-table-column>
-          <el-table-column prop="energy_kcal" label="Energia">
-          </el-table-column>
-          <el-table-column prop="carbohydrate_qty" label="Carboidrato">
-          </el-table-column>
-        </el-table>
-      </div>
-    </modal> -->
   </div>
 </template>
 <script>
+  // import _ from 'lodash'
   import fs from 'fs'
   import uniqid from 'uniqid'
   import { mapActions, mapGetters } from 'vuex'
@@ -99,6 +80,29 @@
     data () {
       return {
         diet: [],
+        columns: [
+          {
+            name: 'description',
+            label: 'Descrição',
+            sortable: 'true'
+          },
+          {
+            name: 'energy_kcal',
+            label: 'Energia'
+          },
+          {
+            name: 'carbohydrate_qty',
+            label: 'Carboidrato'
+          },
+          {
+            name: 'protein_qty',
+            label: 'Proteína'
+          },
+          {
+            name: 'lipid_qty',
+            label: 'Lipídeo'
+          }
+        ],
         filters: [{
           prop: 'description',
           value: ''
@@ -151,6 +155,7 @@
           columns,
           data
         } = param
+        console.log(param)
         const sums = []
         columns.forEach((column, index) => {
           if (index === 0) {
@@ -161,6 +166,9 @@
             sums[index] = 'Total'
             return
           }
+          /* data.forEach((item, index) => {
+            this.updateTotals(item.id, column)
+          }) */
           const values = data.map(item => Number(item[column.property]))
           if (!values.every(value => isNaN(value))) {
             sums[index] = values.reduce((prev, curr) => {
@@ -175,7 +183,6 @@
             sums[index] = 'N/A'
           }
         })
-
         return sums
       },
       saveDiet () {
@@ -205,6 +212,13 @@
             if (err) throw err
           })
         }
+      },
+      updateTotals (mealId, columnName) {
+        // let meal = _.findIndex(this.diet.meals, {'id': mealId})
+        // let values = _.mapValues(meal.items, columnName)
+        console.log(mealId)
+        // console.log(_.sum(_.values(values)))
+        // return _.sum(_.values(values))
       }
     },
     computed: {

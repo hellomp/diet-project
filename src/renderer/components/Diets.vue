@@ -70,6 +70,10 @@
           carbohydrateTarget: '',
           proteinTarget: '',
           lipidTarget: '',
+          energyTotal: '',
+          carbohydrateTotal: '',
+          proteinTotal: '',
+          lipidTotal: '',
           meals: []
         }
       }
