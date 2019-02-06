@@ -17,10 +17,10 @@
           <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
           <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
         </div>
-        <el-table :data="meal.items" show-summary style="width: 100%">
-          <el-table-column type="selection" width="55">
+        <el-table :data="meal.items" show-summary :summary-method="getSummaries" style="width: 100%">
+          <el-table-column fixed type="selection" width="55">
           </el-table-column>
-          <el-table-column v-for="(column, index) of columns" :key="index" :prop="column.name" :label="column.label" :sortable="column.sortable">
+          <el-table-column v-for="(column, index) of columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
           </el-table-column>
         </el-table>
       </div>
@@ -84,7 +84,9 @@
           {
             name: 'description',
             label: 'Descrição',
-            sortable: 'true'
+            sortable: 'true',
+            width: 300,
+            fixed: true
           },
           {
             name: 'energy_kcal',
