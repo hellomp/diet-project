@@ -17,14 +17,12 @@
           <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
           <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
         </div>
-        <el-table :data="meal.items" show-summary :summary-method="getSummaries" style="width: 100%">
+        <el-table :data="meal.items" show-summary style="width: 100%">
           <el-table-column fixed type="selection" width="55">
           </el-table-column>
           <el-table-column v-for="(column, index) of columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
           </el-table-column>
         </el-table>
-      </div>
-      <div>
       </div>
       <button class="mx-auto bg-primary py-2 px-4 text-white rounded-full shadow" @click="createMeal"> 
         <font-awesome-icon icon="plus" class="mr-2"/>
@@ -70,7 +68,7 @@
   </div>
 </template>
 <script>
-  // import _ from 'lodash'
+  import _ from 'lodash'
   import fs from 'fs'
   import uniqid from 'uniqid'
   import { mapActions, mapGetters } from 'vuex'
@@ -84,25 +82,29 @@
           {
             name: 'description',
             label: 'Descrição',
-            sortable: 'true',
+            sortable: true,
             width: 300,
             fixed: true
           },
           {
             name: 'energy_kcal',
-            label: 'Energia'
+            label: 'Energia',
+            sortable: true
           },
           {
             name: 'carbohydrate_qty',
-            label: 'Carboidrato'
+            label: 'Carboidrato',
+            sortable: true
           },
           {
             name: 'protein_qty',
-            label: 'Proteína'
+            label: 'Proteína',
+            sortable: true
           },
           {
             name: 'lipid_qty',
-            label: 'Lipídeo'
+            label: 'Lipídeo',
+            sortable: true
           }
         ],
         filters: [{
@@ -129,11 +131,12 @@
       },
       addSelectedItems () {
         this.selectedNewItems.forEach(selectedNewItem => {
-          selectedNewItem.id = uniqid()
+          selectedNewItem.item_id = uniqid()
           selectedNewItem.qty = 100
           this.diet.meals[this.selectedMealIndex].items.push(selectedNewItem)
         })
         this.cancelModal()
+        this.updateMealTotals(this.selectedMealIndex)
       },
       openModal (mealIndex) {
         this.modalOpened = true
@@ -141,23 +144,32 @@
       },
       cancelModal () {
         this.modalOpened = false
-        console.log(this.$refs)
         this.$refs.newItemTable.$refs.elTable.clearSelection()
         this.selectedNewItems = []
       },
       selectNewItemsChange (row) {
         this.selectedNewItems = row
-        console.log(this.selectedNewItems)
       },
       getRowKey (row) {
         return row.id
       },
-      getSummaries (param) {
-        const {
+      getSummaries () {
+        console.log('teste')
+        /* const sums = []
+        this.columns.forEach((column, index) => {
+          if (index === 0) {
+            sums[index] = ''
+            return
+          }
+          if (index === 1) {
+            sums[index] = 'Total'
+        })
+        return sums */
+
+        /* const {
           columns,
           data
         } = param
-        console.log(param)
         const sums = []
         columns.forEach((column, index) => {
           if (index === 0) {
@@ -168,9 +180,6 @@
             sums[index] = 'Total'
             return
           }
-          /* data.forEach((item, index) => {
-            this.updateTotals(item.id, column)
-          }) */
           const values = data.map(item => Number(item[column.property]))
           if (!values.every(value => isNaN(value))) {
             sums[index] = values.reduce((prev, curr) => {
@@ -185,7 +194,7 @@
             sums[index] = 'N/A'
           }
         })
-        return sums
+        return sums */
       },
       saveDiet () {
         // Primeira vez que a dieta é salva localmente
@@ -215,12 +224,48 @@
           })
         }
       },
-      updateTotals (mealId, columnName) {
+      updateMealTotals (mealId) {
         // let meal = _.findIndex(this.diet.meals, {'id': mealId})
-        // let values = _.mapValues(meal.items, columnName)
-        console.log(mealId)
-        // console.log(_.sum(_.values(values)))
-        // return _.sum(_.values(values))
+        this.columns.forEach(column => {
+          let values = _.sum(_.values(_.mapValues(this.diet.meals[mealId].items, column.name)))
+          switch (column.name) {
+            case 'description':
+              break
+            case 'energy_kcal':
+              this.diet.meals[mealId].energyTotal = values
+              break
+            case 'carbohydrate_qty':
+              this.diet.meals[mealId].carbohydrateTotal = values
+              break
+            case 'protein_qty':
+              this.diet.meals[mealId].proteinTotal = values
+              break
+            case 'lipid_qty':
+              this.diet.meals[mealId].lipidTotal = values
+              break
+          }
+        })
+        this.updateDietTotals()
+      },
+      updateDietTotals () {
+        this.columns.forEach(column => {
+          switch (column.name) {
+            case 'description':
+              break
+            case 'energy_kcal':
+              this.diet.energyTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'energyTotal')))
+              break
+            case 'carbohydrate_qty':
+              this.diet.carbohydrateTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'carbohydrateTotal')))
+              break
+            case 'protein_qty':
+              this.diet.proteinTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'proteinTotal')))
+              break
+            case 'lipid_qty':
+              this.diet.lipidTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'lipidTotal')))
+              break
+          }
+        })
       }
     },
     computed: {
