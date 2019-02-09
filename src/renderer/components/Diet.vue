@@ -20,7 +20,12 @@
         <el-table :data="meal.items" show-summary style="width: 100%">
           <el-table-column fixed type="selection" width="55">
           </el-table-column>
-          <el-table-column v-for="(column, index) of columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+          <el-table-column v-if="column.name === 'qty'" v-for="(column, index) in columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+            <template slot-scope="scope">
+              <input type="text" v-model="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
+            </template>
+          </el-table-column>
+          <el-table-column v-else :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
           </el-table-column>
         </el-table>
       </div>
@@ -77,7 +82,7 @@
   export default {
     data () {
       return {
-        diet: [],
+        diet: {},
         columns: [
           {
             name: 'description',
@@ -87,22 +92,26 @@
             fixed: true
           },
           {
-            name: 'energy_kcal',
+            name: 'qty',
+            label: 'Quantidade'
+          },
+          {
+            name: 'actualEnergy_kcal',
             label: 'Energia',
             sortable: true
           },
           {
-            name: 'carbohydrate_qty',
+            name: 'actualCarbohydrate_qty',
             label: 'Carboidrato',
             sortable: true
           },
           {
-            name: 'protein_qty',
+            name: 'actualProtein_qty',
             label: 'Proteína',
             sortable: true
           },
           {
-            name: 'lipid_qty',
+            name: 'actualLipid_qty',
             label: 'Lipídeo',
             sortable: true
           }
@@ -131,9 +140,20 @@
       },
       addSelectedItems () {
         this.selectedNewItems.forEach(selectedNewItem => {
-          selectedNewItem.item_id = uniqid()
-          selectedNewItem.qty = 100
-          this.diet.meals[this.selectedMealIndex].items.push(selectedNewItem)
+          this.diet.meals[this.selectedMealIndex].items.push({
+            id: selectedNewItem.id,
+            item_id: uniqid(),
+            qty: 100,
+            description: selectedNewItem.description,
+            actualEnergy_kcal: selectedNewItem.energy_kcal,
+            actualCarbohydrate_qty: selectedNewItem.carbohydrate_qty,
+            actualProtein_qty: selectedNewItem.protein_qty,
+            actualLipid_qty: selectedNewItem.lipid_qty,
+            energy_kcal: selectedNewItem.energy_kcal,
+            carbohydrate_qty: selectedNewItem.carbohydrate_qty,
+            protein_qty: selectedNewItem.protein_qty,
+            lipid_qty: selectedNewItem.lipid_qty
+          })
         })
         this.cancelModal()
         this.updateMealTotals(this.selectedMealIndex)
@@ -151,6 +171,7 @@
         this.selectedNewItems = row
       },
       getRowKey (row) {
+        console.log(row)
         return row.id
       },
       getSummaries () {
@@ -224,6 +245,31 @@
           })
         }
       },
+      updateQty (mealId, itemId) {
+        let actualItemId = _.findIndex(this.diet.meals[mealId].items, {'item_id': itemId})
+        let baseQty = _.divide(this.diet.meals[mealId].items[actualItemId].qty, 100)
+        this.columns.forEach(column => {
+          switch (column.name) {
+            case 'description':
+              break
+            case 'qty':
+              break
+            case 'actualEnergy_kcal':
+              this.diet.meals[mealId].items[actualItemId].actualEnergy_kcal = _.multiply(this.diet.meals[mealId].items[actualItemId].energy_kcal, baseQty)
+              break
+            case 'actualCarbohydrate_qty':
+              this.diet.meals[mealId].items[actualItemId].actualCarbohydrate_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].carbohydrate_qty, baseQty)
+              break
+            case 'actualProtein_qty':
+              this.diet.meals[mealId].items[actualItemId].actualProtein_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].protein_qty, baseQty)
+              break
+            case 'actualLipid_qty':
+              this.diet.meals[mealId].items[actualItemId].actualLipid_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].lipid_qty, baseQty)
+              break
+          }
+        })
+        this.updateMealTotals(mealId)
+      },
       updateMealTotals (mealId) {
         // let meal = _.findIndex(this.diet.meals, {'id': mealId})
         this.columns.forEach(column => {
@@ -231,16 +277,18 @@
           switch (column.name) {
             case 'description':
               break
-            case 'energy_kcal':
+            case 'qty':
+              break
+            case 'actualEnergy_kcal':
               this.diet.meals[mealId].energyTotal = values
               break
-            case 'carbohydrate_qty':
+            case 'actualCarbohydrate_qty':
               this.diet.meals[mealId].carbohydrateTotal = values
               break
-            case 'protein_qty':
+            case 'actualProtein_qty':
               this.diet.meals[mealId].proteinTotal = values
               break
-            case 'lipid_qty':
+            case 'actualLipid_qty':
               this.diet.meals[mealId].lipidTotal = values
               break
           }
@@ -252,16 +300,18 @@
           switch (column.name) {
             case 'description':
               break
-            case 'energy_kcal':
+            case 'qty':
+              break
+            case 'actualEnergy_kcal':
               this.diet.energyTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'energyTotal')))
               break
-            case 'carbohydrate_qty':
+            case 'actualCarbohydrate_qty':
               this.diet.carbohydrateTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'carbohydrateTotal')))
               break
-            case 'protein_qty':
+            case 'actualProtein_qty':
               this.diet.proteinTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'proteinTotal')))
               break
-            case 'lipid_qty':
+            case 'actualLipid_qty':
               this.diet.lipidTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'lipidTotal')))
               break
           }
@@ -270,6 +320,14 @@
     },
     computed: {
       ...mapGetters(['getCompositions'])
+    },
+    watch: {
+      diet: {
+        handler (val) {
+          console.log('Update diet')
+        },
+        deep: true
+      }
     },
     created () {
       fs.readFile(this.$route.params.dietPath, 'utf-8', (err, data) => {
