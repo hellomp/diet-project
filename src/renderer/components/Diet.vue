@@ -11,29 +11,63 @@
       </div>
     </div>
 
-    <div id="content-body" class="p-4 flex flex-col">
-      <div v-for="(meal, mealIndex) in diet.meals" :key="meal.id" id="diets-table" class="bg-white rounded-lg mb-4 shadow">
-        <div id="table-header" class="px-4 pt-4 pb-2 flex justify-between items-center">
-          <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
-          <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
+    <div id="content-body">
+      <div id="tables" class="p-4 pr-2 flex flex-col">
+        <div v-for="(meal, mealIndex) in diet.meals" :key="meal.id" id="diets-table" class="bg-white rounded-lg mb-4 shadow">
+          <div id="table-header" class="px-4 pt-4 pb-2 flex justify-between items-center">
+            <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
+            <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
+          </div>
+          <el-table :data="meal.items" show-summary :summary-method="getSummaries" style="width: 100%">
+            <el-table-column fixed type="selection" width="55">
+            </el-table-column>
+            <el-table-column v-if="column.name === 'qty'" v-for="(column, index) in columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+              <template slot-scope="scope">
+                <input type="number" v-model.number.trim="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
+              </template>
+            </el-table-column>
+            <el-table-column v-else :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+            </el-table-column>
+          </el-table>
         </div>
-        <el-table :data="meal.items" show-summary style="width: 100%">
-          <el-table-column fixed type="selection" width="55">
-          </el-table-column>
-          <el-table-column v-if="column.name === 'qty'" v-for="(column, index) in columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
-            <template slot-scope="scope">
-              <input type="text" v-model="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
-            </template>
-          </el-table-column>
-          <el-table-column v-else :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
-          </el-table-column>
-        </el-table>
+        <div>
+          <p>{{diet.energyTotal}}</p>
+        </div>
+        <button class="mx-auto bg-primary py-2 px-4 text-white rounded-full shadow" @click="createMeal"> 
+          <font-awesome-icon icon="plus" class="mr-2"/>
+          <span >Nova refeição</span>
+        </button>
       </div>
-      <button class="mx-auto bg-primary py-2 px-4 text-white rounded-full shadow" @click="createMeal"> 
-        <font-awesome-icon icon="plus" class="mr-2"/>
-        <span >Nova refeição</span>
-      </button>
+      <div id="results" class="p-4 pl-2">
+        <div class="w-full h-auto pt-4 bg-white rounded-lg shadow">
+          <div class="flex flex-col mb-4 items-center">
+            <span class="px-3 py-1 mb-2 text-sm border rounded-full">Energia</span>
+            <div class="flex w-full justify-between">
+              <div class="w-full flex items-center justify-center">{{this.diet.energyTotal}} kcal</div>
+              <div class="w-auto px-2 py-1 bg-positive rounded-full text-white font-bold text-sm">{{updatePercentage(this.diet.energyTotal, this.diet.energyTarget)}}%</div>
+              <div class="w-full flex items-center justify-center">{{this.diet.energyTarget}} kcal</div>
+            </div>
+          </div>
+          <div class="flex flex-col mb-4 items-center">
+            <span class="px-3 py-1 mb-2 text-sm border rounded-full">Carboidrato</span>
+            <div class="flex items-center w-full justify-between">
+              <div class="w-full flex flex-col items-center justify-center">
+                <span>{{this.diet.carbohydrateTotal}} kcal</span>
+                <span>20%</span>
+                <span>5 g/kg</span>
+              </div>
+              <div class="w-auto h-full px-2 py-1 bg-negative rounded-full text-white font-bold text-sm">100%</div>
+              <div class="w-full flex flex-col items-center justify-center">
+                <span>{{this.diet.carbohydrateTarget}} kcal</span>
+                <span>20%</span>
+                <span>5 g/kg</span>
+              </div>            
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
     <el-dialog :visible.sync="modalOpened" :show-close="false" width="90%" top="5vh">
         <div id="diets-table" class="bg-white rounded-lg">
         <div id="table-header" class="px-4 pt-4 pb-2 flex justify-between items-center">
@@ -174,48 +208,36 @@
         console.log(row)
         return row.id
       },
-      getSummaries () {
-        console.log('teste')
-        /* const sums = []
-        this.columns.forEach((column, index) => {
-          if (index === 0) {
-            sums[index] = ''
-            return
-          }
-          if (index === 1) {
-            sums[index] = 'Total'
-        })
-        return sums */
-
-        /* const {
-          columns,
-          data
-        } = param
+      getSummaries (param) {
+      /* eslint-disable */
+        const { columns, data } = param
         const sums = []
+        console.log(data)
         columns.forEach((column, index) => {
           if (index === 0) {
-            sums[index] = ''
             return
           }
           if (index === 1) {
             sums[index] = 'Total'
             return
           }
+          
           const values = data.map(item => Number(item[column.property]))
           if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
+            sums[index] = _.round(values.reduce((prev, curr) => {
               const value = Number(curr)
               if (!isNaN(value)) {
                 return prev + curr
               } else {
                 return prev
               }
-            }, 0)
+            }, 0), 2)
           } else {
             sums[index] = 'N/A'
           }
         })
-        return sums */
+
+        return sums
       },
       saveDiet () {
         // Primeira vez que a dieta é salva localmente
@@ -255,16 +277,16 @@
             case 'qty':
               break
             case 'actualEnergy_kcal':
-              this.diet.meals[mealId].items[actualItemId].actualEnergy_kcal = _.multiply(this.diet.meals[mealId].items[actualItemId].energy_kcal, baseQty)
+              this.diet.meals[mealId].items[actualItemId].actualEnergy_kcal = _.round(_.multiply(this.diet.meals[mealId].items[actualItemId].energy_kcal, baseQty), 2)
               break
             case 'actualCarbohydrate_qty':
-              this.diet.meals[mealId].items[actualItemId].actualCarbohydrate_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].carbohydrate_qty, baseQty)
+              this.diet.meals[mealId].items[actualItemId].actualCarbohydrate_qty = _.round(_.multiply(this.diet.meals[mealId].items[actualItemId].carbohydrate_qty, baseQty), 2)
               break
             case 'actualProtein_qty':
-              this.diet.meals[mealId].items[actualItemId].actualProtein_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].protein_qty, baseQty)
+              this.diet.meals[mealId].items[actualItemId].actualProtein_qty = _.round(_.multiply(this.diet.meals[mealId].items[actualItemId].protein_qty, baseQty), 2)
               break
             case 'actualLipid_qty':
-              this.diet.meals[mealId].items[actualItemId].actualLipid_qty = _.multiply(this.diet.meals[mealId].items[actualItemId].lipid_qty, baseQty)
+              this.diet.meals[mealId].items[actualItemId].actualLipid_qty = _.round(_.multiply(this.diet.meals[mealId].items[actualItemId].lipid_qty, baseQty), 2)
               break
           }
         })
@@ -280,16 +302,16 @@
             case 'qty':
               break
             case 'actualEnergy_kcal':
-              this.diet.meals[mealId].energyTotal = values
+              this.diet.meals[mealId].energyTotal = _.round(values, 2)
               break
             case 'actualCarbohydrate_qty':
-              this.diet.meals[mealId].carbohydrateTotal = values
+              this.diet.meals[mealId].carbohydrateTotal = _.round(values, 2)
               break
             case 'actualProtein_qty':
-              this.diet.meals[mealId].proteinTotal = values
+              this.diet.meals[mealId].proteinTotal = _.round(values, 2)
               break
             case 'actualLipid_qty':
-              this.diet.meals[mealId].lipidTotal = values
+              this.diet.meals[mealId].lipidTotal = _.round(values, 2)
               break
           }
         })
@@ -316,7 +338,10 @@
               break
           }
         })
-      }
+      },
+      updatePercentage (totalValue, targetValue) {
+        return _.round(_.multiply(_.divide(totalValue, targetValue), 100), 2)
+      },
     },
     computed: {
       ...mapGetters(['getCompositions'])
@@ -338,3 +363,14 @@
     }
   }
 </script>
+<style scoped>
+#content-body{
+  display: flex;
+}
+#tables{
+  width: calc(100% - 350px)
+}
+#results{
+  width: 350px;
+}
+</style>

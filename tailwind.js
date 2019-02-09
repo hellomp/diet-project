@@ -48,7 +48,9 @@ let colors = {
   'black': '#707070',
   'grey': '#C5C5C5',
   'primary': '#4285F4',
-  'white': '#ffffff'
+  'white': '#ffffff',
+  'positive': '#51C08A',
+  'negative': '#DB4437'
 }
 
 module.exports = {
