@@ -58,6 +58,7 @@
     "@fortawesome/vue-fontawesome": "^0.1.5",
     "element-ui": "^2.5.4",
     "lodash": "^4.17.11",
+    "sortablejs": "^1.8.1",
     "sqlite-sync": "^0.3.8",
     "tmp": "0.0.33",
     "uniqid": "^5.0.3",

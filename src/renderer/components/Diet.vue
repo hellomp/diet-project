@@ -18,7 +18,7 @@
             <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
             <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
           </div>
-          <el-table :data="meal.items" show-summary :summary-method="getSummaries" style="width: 100%">
+          <el-table :data="meal.items" row-key="item_id" :value="mealIndex" show-summary :summary-method="getSummaries" style="width: 100%">
             <el-table-column fixed type="selection" width="55">
             </el-table-column>
             <el-table-column prop="description" label="Descrição" width="300" fixed>
@@ -33,19 +33,6 @@
           </el-table>
         </div>
         <div>
-          <!-- <el-select
-            v-model="selectedColumns"
-            multiple
-            collapse-tags
-            style="margin-left: 20px;"
-            placeholder="Select">
-            <el-option
-              v-for="item in columns"
-              :key="item.name"
-              :label="item.label"
-              :value="item">
-            </el-option>
-          </el-select> -->
           <multiselect v-model="selectedColumns" :options="columns" :multiple="true" :close-on-select="false" :clear-on-select="false" :preserve-search="true" label="label" track-by="name" :preselect-first="true">
           </multiselect>
         </div>
@@ -126,6 +113,7 @@
   import _ from 'lodash'
   import fs from 'fs'
   import uniqid from 'uniqid'
+  import Sortable from 'sortablejs'
   import { mapActions, mapGetters } from 'vuex'
   const {dialog} = require('electron').remote
 
@@ -211,14 +199,11 @@
         this.selectedNewItems = row
       },
       getRowKey (row) {
-        console.log(row)
         return row.id
       },
       getSummaries (param) {
-      /* eslint-disable */
         const { columns, data } = param
         const sums = []
-        console.log(data)
         columns.forEach((column, index) => {
           if (index === 0) {
             return
@@ -227,7 +212,6 @@
             sums[index] = 'Total'
             return
           }
-          
           const values = data.map(item => Number(item[column.property]))
           if (!values.every(value => isNaN(value))) {
             sums[index] = _.round(values.reduce((prev, curr) => {
@@ -331,34 +315,26 @@
             case 'qty':
               break
             case 'actualEnergy_kcal':
-              this.diet.energyTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'energyTotal')))
+              this.diet.energyTotal = _.round(_.sum(_.values(_.mapValues(this.diet.meals, 'energyTotal'))), 2)
               break
             case 'actualCarbohydrate_qty':
-              this.diet.carbohydrateTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'carbohydrateTotal')))
+              this.diet.carbohydrateTotal = _.round(_.sum(_.values(_.mapValues(this.diet.meals, 'carbohydrateTotal'))), 2)
               break
             case 'actualProtein_qty':
-              this.diet.proteinTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'proteinTotal')))
+              this.diet.proteinTotal = _.round(_.sum(_.values(_.mapValues(this.diet.meals, 'proteinTotal'))), 2)
               break
             case 'actualLipid_qty':
-              this.diet.lipidTotal = _.sum(_.values(_.mapValues(this.diet.meals, 'lipidTotal')))
+              this.diet.lipidTotal = _.round(_.sum(_.values(_.mapValues(this.diet.meals, 'lipidTotal'))), 2)
               break
           }
         })
       },
       updatePercentage (totalValue, targetValue) {
         return _.round(_.multiply(_.divide(totalValue, targetValue), 100), 2)
-      },
+      }
     },
     computed: {
       ...mapGetters(['getCompositions'])
-    },
-    watch: {
-      diet: {
-        handler (val) {
-          console.log('Update diet')
-        },
-        deep: true
-      }
     },
     created () {
       fs.readFile(this.$route.params.dietPath, 'utf-8', (err, data) => {
@@ -366,6 +342,27 @@
         this.diet = JSON.parse(data)
         console.log('Read new diet')
       })
+    },
+    updated () {
+      const tables = document.querySelectorAll('.el-table__fixed-body-wrapper tbody')
+      const self = this
+      for (let i = 0; i < tables.length; i++) {
+        Sortable.create(tables[i], {
+          animation: 150,
+          group: 'table',
+          onEnd ({ newIndex, oldIndex, to, from }) {
+            let fromValue = from.parentNode.parentNode.parentNode.parentNode.getAttribute('value')
+            let toValue = to.parentNode.parentNode.parentNode.parentNode.getAttribute('value')
+            if (fromValue === toValue) {
+              const targetRow = self.diet.meals[i].items.splice(oldIndex, 1)[0]
+              self.diet.meals[i].items.splice(newIndex, 0, targetRow)
+            } else {
+              const targetRow = self.diet.meals[fromValue].items.splice(oldIndex, 1)[0]
+              self.diet.meals[toValue].items.splice(newIndex, 0, targetRow)
+            }
+          }
+        })
+      }
     }
   }
 </script>
