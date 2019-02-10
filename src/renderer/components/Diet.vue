@@ -21,17 +21,33 @@
           <el-table :data="meal.items" show-summary :summary-method="getSummaries" style="width: 100%">
             <el-table-column fixed type="selection" width="55">
             </el-table-column>
-            <el-table-column v-if="column.name === 'qty'" v-for="(column, index) in columns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+            <el-table-column prop="description" label="Descrição" width="300" fixed>
+            </el-table-column>
+            <el-table-column prop="qty" label="Quantidade" fixed>
               <template slot-scope="scope">
                 <input type="number" v-model.number.trim="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
               </template>
             </el-table-column>
-            <el-table-column v-else :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
+            <el-table-column  v-for="(column, index) in selectedColumns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
             </el-table-column>
           </el-table>
         </div>
         <div>
-          <p>{{diet.energyTotal}}</p>
+          <!-- <el-select
+            v-model="selectedColumns"
+            multiple
+            collapse-tags
+            style="margin-left: 20px;"
+            placeholder="Select">
+            <el-option
+              v-for="item in columns"
+              :key="item.name"
+              :label="item.label"
+              :value="item">
+            </el-option>
+          </el-select> -->
+          <multiselect v-model="selectedColumns" :options="columns" :multiple="true" :close-on-select="false" :clear-on-select="false" :preserve-search="true" label="label" track-by="name" :preselect-first="true">
+          </multiselect>
         </div>
         <button class="mx-auto bg-primary py-2 px-4 text-white rounded-full shadow" @click="createMeal"> 
           <font-awesome-icon icon="plus" class="mr-2"/>
@@ -119,17 +135,6 @@
         diet: {},
         columns: [
           {
-            name: 'description',
-            label: 'Descrição',
-            sortable: true,
-            width: 300,
-            fixed: true
-          },
-          {
-            name: 'qty',
-            label: 'Quantidade'
-          },
-          {
             name: 'actualEnergy_kcal',
             label: 'Energia',
             sortable: true
@@ -154,6 +159,7 @@
           prop: 'description',
           value: ''
         }],
+        selectedColumns: [],
         selectedItems: [],
         selectedNewItems: [],
         selectedMealIndex: 0,
@@ -374,3 +380,4 @@
   width: 350px;
 }
 </style>
+<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
