@@ -16,9 +16,12 @@
         <div v-for="(meal, mealIndex) in diet.meals" :key="meal.id" id="diets-table" class="bg-white rounded-lg mb-4 shadow">
           <div id="table-header" class="px-4 pt-4 pb-2 flex justify-between items-center">
             <div id="table-title" class="font-semibold text-xl">{{meal.name}}</div>
-            <div id="table-action"><button @click="openModal(mealIndex)" class="text-primary">Novo alimento</button></div>
+            <div id="table-action">
+              <button @click="openModal(mealIndex)" class="text-primary mx-4">Novo alimento</button>
+              <button @click="deleteIMeal(mealIndex)" class="text-grey"><font-awesome-icon icon="trash-alt"/></button>
+              </div>
           </div>
-          <el-table :data="meal.items" row-key="item_id" :value="mealIndex" show-summary :summary-method="getSummaries" style="width: 100%">
+          <el-table :data="meal.items" row-key="item_id" :value="mealIndex" show-summary :summary-method="getSummaries" @selection-change="selectItemsChange" style="width: 100%">
             <el-table-column fixed type="selection" width="55">
             </el-table-column>
             <el-table-column prop="description" label="Descrição" width="300" fixed>
@@ -107,6 +110,10 @@
         </data-tables>
       </div>
     </el-dialog>
+    <button v-if="selectedItems.length > 0" class="bg-negative py-2 px-4 mb-6 mr-6 text-white rounded-full shadow fixed pin-b pin-r" @click="deleteItems"> 
+          <font-awesome-icon icon="trash-alt" class="mr-2"/>
+          <span>Excluir</span>
+    </button>
   </div>
 </template>
 <script>
@@ -195,8 +202,25 @@
         this.$refs.newItemTable.$refs.elTable.clearSelection()
         this.selectedNewItems = []
       },
+      selectItemsChange (row) {
+        this.selectedItems = row
+      },
       selectNewItemsChange (row) {
         this.selectedNewItems = row
+      },
+      deleteIMeal (mealId) {
+        this.diet.meals.splice(mealId, 1)
+      },
+      deleteItems () {
+        this.selectedItems.forEach(selectedItem => {
+          this.diet.meals.forEach(meal => {
+            for (let i = 0; i < meal.items.length; i++) {
+              if (meal.items[i].item_id === selectedItem.item_id) {
+                meal.items.splice(i, 1)
+              }
+            }
+          })
+        })
       },
       getRowKey (row) {
         return row.id
