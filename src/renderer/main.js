@@ -5,14 +5,14 @@ import router from './router'
 import store from './store'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faList, faTable, faCog, faSearch, faPlus, faTrashAlt } from '@fortawesome/free-solid-svg-icons'
+import { faList, faTable, faCog, faSearch, faPlus, faTrashAlt, faSave } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import VModal from 'vue-js-modal'
 import { Table, TableColumn, Select, Option, Dialog, Pagination } from 'element-ui'
 import Multiselect from 'vue-multiselect'
 import { DataTables } from 'vue-data-tables'
 
-library.add(faList, faTable, faCog, faSearch, faPlus, faTrashAlt)
+library.add(faList, faTable, faCog, faSearch, faPlus, faTrashAlt, faSave)
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 Vue.component('multiselect', Multiselect)

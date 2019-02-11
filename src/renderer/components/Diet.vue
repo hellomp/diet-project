@@ -4,8 +4,10 @@
       <div class="bg-black flex-grow"></div>
       <div id="version" class="flex-grow flex justify-center text-sm font-semibold">{{diet.name}}</div>
       <div id="control-icons" class="flex-grow flex justify-end text-grey pr-4">
-        <font-awesome-icon icon="table" class="mr-2"/>
         <button @click="saveDiet">
+          <font-awesome-icon icon="save" />
+        </button>
+        <button @click="exportDiet">
           <font-awesome-icon icon="table" />
         </button>
       </div>
@@ -119,6 +121,7 @@
 <script>
   import _ from 'lodash'
   import fs from 'fs'
+  import { Document, Packer, Paragraph } from 'docx'
   import uniqid from 'uniqid'
   import Sortable from 'sortablejs'
   import { mapActions, mapGetters } from 'vuex'
@@ -280,6 +283,32 @@
             if (err) throw err
           })
         }
+      },
+      exportDiet () {
+        let doc = new Document()
+        let countItems = 0
+        this.diet.meals.forEach(meal => {
+          meal.items.forEach(items => {
+            countItems += 1
+          })
+        })
+        let table = doc.createTable(countItems + 1, 3)
+        let currentRow = 0
+        table.getCell(0, 0).addContent(new Paragraph('REFEIÇÃO'))
+        table.getCell(0, 1).addContent(new Paragraph('ALIMENTOS'))
+        table.getCell(0, 2).addContent(new Paragraph('QUANT'))
+        this.diet.meals.forEach(meal => {
+          table.getCell(currentRow + 1, 0).addContent(new Paragraph(meal.name))
+          meal.items.forEach(item => {
+            table.getCell(currentRow + 1, 1).addContent(new Paragraph(item.description))
+            table.getCell(currentRow + 1, 2).addContent(new Paragraph(item.qty))
+            currentRow += 1
+          })
+        })
+        let packer = new Packer()
+        packer.toBuffer(doc).then((buffer) => {
+          fs.writeFileSync('Hello world.docx', buffer)
+        })
       },
       updateQty (mealId, itemId) {
         let actualItemId = _.findIndex(this.diet.meals[mealId].items, {'item_id': itemId})
