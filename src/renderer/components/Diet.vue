@@ -30,7 +30,7 @@
             </el-table-column>
             <el-table-column prop="qty" label="Quantidade" fixed>
               <template slot-scope="scope">
-                <input type="number" v-model.number.trim="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
+                <input type="number" v-model.number="scope.row.qty" @input="updateQty(mealIndex, scope.row.item_id)">
               </template>
             </el-table-column>
             <el-table-column  v-for="(column, index) in selectedColumns" :key="index" :prop="column.name" :label="column.label" :width="column.width" :fixed="column.fixed" :sortable="column.sortable">
@@ -121,10 +121,12 @@
 <script>
   import _ from 'lodash'
   import fs from 'fs'
+  /* eslint-disable */
   import { Document, Packer, Paragraph } from 'docx'
   import uniqid from 'uniqid'
   import Sortable from 'sortablejs'
   import { mapActions, mapGetters } from 'vuex'
+import { currentId } from 'async_hooks';
   const {dialog} = require('electron').remote
 
   export default {
@@ -164,7 +166,7 @@
         modalOpened: false,
         tableProps: {
           height: '80vh'
-        }
+        },
       }
     },
     methods: {
@@ -286,25 +288,88 @@
       },
       exportDiet () {
         let doc = new Document()
+        let itemsExport = []
+        let items = []
         let countItems = 0
         this.diet.meals.forEach(meal => {
-          meal.items.forEach(items => {
+          meal.items.forEach(item => {
+            items.push({
+              id: item.id,
+              item_id: item.item_id,
+              qty: item.qty,
+              description: item.description,
+              actualEnergy_kcal: item.actualEnergy_kcal,
+              actualCarbohydrate_qty: item.actualCarbohydrate_qty,
+              actualProtein_qty: item.actualProtein_qty,
+              actualLipid_qty: item.actualLipid_qty,
+            })
             countItems += 1
           })
         })
-        let table = doc.createTable(countItems + 1, 3)
+        /* Tabela qualitativa */
+        let qualilativeTable = doc.createTable(countItems + 1, 3)
         let currentRow = 0
-        table.getCell(0, 0).addContent(new Paragraph('REFEIÇÃO'))
-        table.getCell(0, 1).addContent(new Paragraph('ALIMENTOS'))
-        table.getCell(0, 2).addContent(new Paragraph('QUANT'))
+        qualilativeTable.getCell(0, 0).addContent(new Paragraph('REFEIÇÃO'))
+        qualilativeTable.getCell(0, 1).addContent(new Paragraph('ALIMENTOS'))
+        qualilativeTable.getCell(0, 2).addContent(new Paragraph('QUANT'))
         this.diet.meals.forEach(meal => {
-          table.getCell(currentRow + 1, 0).addContent(new Paragraph(meal.name))
+          qualilativeTable.getCell(currentRow + 1, 0).addContent(new Paragraph(meal.name))
           meal.items.forEach(item => {
-            table.getCell(currentRow + 1, 1).addContent(new Paragraph(item.description))
-            table.getCell(currentRow + 1, 2).addContent(new Paragraph(item.qty))
+            qualilativeTable.getCell(currentRow + 1, 1).addContent(new Paragraph(item.description))
+            qualilativeTable.getCell(currentRow + 1, 2).addContent(new Paragraph(item.qty))
             currentRow += 1
           })
         })
+        /* Tabela de composição */      
+        items.forEach(item => {
+          if(itemsExport.length > 0){
+            for(let i = 0; i < itemsExport.length; i++){
+              let noItemEqual = true
+              if(item.item_id === itemsExport[i].item_id){
+                return
+              }
+              if(item.id === itemsExport[i].id) {
+                console.log(item.description + 'Id: ' + item.id + ' ' + itemsExport[i].id + ' ItemId:' + item.item_id + ' ' + itemsExport[i].item_id) 
+                console.log(this.diet.meals[0].items[2].qty)               
+                itemsExport[i].qty += item.qty
+                console.log(this.diet.meals[0].items[2].qty)
+                console.log(this.diet.meals[0].items[2].actualEnergy_kcal)
+                itemsExport[i].actualEnergy_kcal += item.actualEnergy_kcal
+                console.log(this.diet.meals[0].items[2].actualEnergy_kcal)
+                itemsExport[i].actualCarbohydrate_qty += item.actualCarbohydrate_qty
+                itemsExport[i].actualProtein_qty += item.actualProtein_qty
+                itemsExport[i].actualLipid_qty += item.actualLipid_qty
+                noItemEqual = false
+                return
+              }
+              if(i === itemsExport.length-1 && noItemEqual){
+                itemsExport.push(item)
+              }
+            }
+          }else{
+            itemsExport.push(item)
+          }
+        })
+        let compositionTable = doc.createTable(itemsExport.length + 2, 5)
+        currentRow = 0
+        compositionTable.getCell(0, 0).addContent(new Paragraph('ALIMENTO'))
+        compositionTable.getCell(0, 1).addContent(new Paragraph('Kcal'))
+        compositionTable.getCell(0, 2).addContent(new Paragraph('CARB'))
+        compositionTable.getCell(0, 3).addContent(new Paragraph('PROT'))
+        compositionTable.getCell(0, 4).addContent(new Paragraph('LIP'))
+        itemsExport.forEach(itemExport => {
+          compositionTable.getCell(currentRow + 1, 0).addContent(new Paragraph(itemExport.description))
+          compositionTable.getCell(currentRow + 1, 1).addContent(new Paragraph(itemExport.actualEnergy_kcal))
+          compositionTable.getCell(currentRow + 1, 2).addContent(new Paragraph(itemExport.actualCarbohydrate_qty))
+          compositionTable.getCell(currentRow + 1, 3).addContent(new Paragraph(itemExport.actualProtein_qty))
+          compositionTable.getCell(currentRow + 1, 4).addContent(new Paragraph(itemExport.actualLipid_qty))
+          currentRow += 1
+        })
+        compositionTable.getCell(itemsExport.length + 1, 0).addContent(new Paragraph('TOTAL'))
+        compositionTable.getCell(itemsExport.length + 1, 1).addContent(new Paragraph(this.diet.energyTotal))
+        compositionTable.getCell(itemsExport.length + 1, 2).addContent(new Paragraph(this.diet.carbohydrateTotal))
+        compositionTable.getCell(itemsExport.length + 1, 3).addContent(new Paragraph(this.diet.proteinTotal))
+        compositionTable.getCell(itemsExport.length + 1, 4).addContent(new Paragraph(this.diet.lipidTotal))
         let packer = new Packer()
         packer.toBuffer(doc).then((buffer) => {
           fs.writeFileSync('Hello world.docx', buffer)
@@ -315,10 +380,6 @@
         let baseQty = _.divide(this.diet.meals[mealId].items[actualItemId].qty, 100)
         this.columns.forEach(column => {
           switch (column.name) {
-            case 'description':
-              break
-            case 'qty':
-              break
             case 'actualEnergy_kcal':
               this.diet.meals[mealId].items[actualItemId].actualEnergy_kcal = _.round(_.multiply(this.diet.meals[mealId].items[actualItemId].energy_kcal, baseQty), 2)
               break
@@ -388,6 +449,14 @@
     },
     computed: {
       ...mapGetters(['getCompositions'])
+    },
+    watch: {
+      diet: {
+        handler(){
+          console.log('Update Diet')
+        },
+        deep: true
+      }
     },
     created () {
       fs.readFile(this.$route.params.dietPath, 'utf-8', (err, data) => {
